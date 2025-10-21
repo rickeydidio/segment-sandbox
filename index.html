@@ -155,29 +155,57 @@
     // --- FETCH PRODUCTS ---
     async function fetchProducts() {
       try {
-        console.log('Fetching products from:', WEB_APP_URL);
-        const response = await fetch(WEB_APP_URL, {
-          method: 'GET',
-          redirect: 'follow'
+        console.log('Fetching products using JSONP from:', WEB_APP_URL);
+        
+        const response = await new Promise((resolve, reject) => {
+          const callbackName = 'jsonpCallback_' + Date.now();
+          
+          window[callbackName] = function(data) {
+            console.log('JSONP callback received with data:', data);
+            delete window[callbackName];
+            if (script.parentNode) {
+              document.body.removeChild(script);
+            }
+            resolve(data);
+          };
+          
+          const script = document.createElement('script');
+          script.src = WEB_APP_URL + '?callback=' + callbackName;
+          
+          script.onerror = function(error) {
+            console.error('JSONP script error:', error);
+            delete window[callbackName];
+            if (script.parentNode) {
+              document.body.removeChild(script);
+            }
+            reject(new Error('Failed to load script'));
+          };
+          
+          script.onload = function() {
+            console.log('Script loaded successfully');
+          };
+          
+          setTimeout(() => {
+            if (window[callbackName]) {
+              console.error('JSONP timeout - callback was never called');
+              delete window[callbackName];
+              if (script.parentNode) {
+                document.body.removeChild(script);
+              }
+              reject(new Error('JSONP timeout'));
+            }
+          }, 15000);
+          
+          console.log('Adding JSONP script with callback:', callbackName);
+          document.body.appendChild(script);
         });
-        console.log('Response status:', response.status);
-        console.log('Response ok:', response.ok);
         
-        if (!response.ok) {
-          const text = await response.text();
-          console.error('Response text:', text);
-          throw new Error(`HTTP error: ${response.status}`);
-        }
-        
-        const text = await response.text();
-        console.log('Raw response:', text);
-        productData = JSON.parse(text);
-        console.log('Products loaded:', productData);
+        productData = response;
+        console.log('Products loaded successfully:', Object.keys(productData).length, 'categories');
         populateCategoryDropdown();
       } catch (err) {
         console.error('Error loading products:', err);
-        console.error('Error stack:', err.stack);
-        showStatus('productStatus', 'Failed to load product catalog: ' + err.message, 'error');
+        showStatus('productStatus', 'Failed to load products: ' + err.message, 'error');
       }
     }
 
@@ -247,7 +275,6 @@
       if (subcategory && productData[category][subcategory]) {
         const productInfo = productData[category][subcategory];
         
-        // Populate variants (colors or washes)
         if (productInfo.variants && productInfo.variants.length > 0) {
           productInfo.variants.forEach(variant => {
             const opt = document.createElement('option');
@@ -257,7 +284,6 @@
           });
           variantSelect.disabled = false;
         } else {
-          // No variants, skip to sizes
           populateSizes(category, subcategory);
         }
 
@@ -346,30 +372,62 @@
       }
 
       try {
-        console.log('Creating/finding user...');
-        const response = await fetch(WEB_APP_URL, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            firstName,
-            lastName,
-            email,
-            state,
-            emailOptIn,
-            loyaltyProgram
-          })
+        console.log('Creating/finding user via JSONP...');
+        
+        const callbackName = 'userCallback_' + Date.now();
+        
+        const result = await new Promise((resolve, reject) => {
+          window[callbackName] = function(data) {
+            console.log('User callback received:', data);
+            delete window[callbackName];
+            if (script.parentNode) {
+              document.body.removeChild(script);
+            }
+            resolve(data);
+          };
+          
+          const script = document.createElement('script');
+          const params = new URLSearchParams({
+            callback: callbackName,
+            firstName: firstName,
+            lastName: lastName,
+            email: email,
+            state: state,
+            emailOptIn: emailOptIn,
+            loyaltyProgram: loyaltyProgram,
+            action: 'createUser'
+          });
+          
+          script.src = WEB_APP_URL + '?' + params.toString();
+          
+          script.onerror = function(error) {
+            console.error('User script error:', error);
+            delete window[callbackName];
+            if (script.parentNode) {
+              document.body.removeChild(script);
+            }
+            reject(new Error('Failed to create user'));
+          };
+          
+          setTimeout(() => {
+            if (window[callbackName]) {
+              console.error('User callback timeout');
+              delete window[callbackName];
+              if (script.parentNode) {
+                document.body.removeChild(script);
+              }
+              reject(new Error('User creation timeout'));
+            }
+          }, 15000);
+          
+          console.log('Adding user script with callback:', callbackName);
+          document.body.appendChild(script);
         });
-
-        if (!response.ok) throw new Error(`HTTP error: ${response.status}`);
-        const result = await response.json();
         
         if (result.status === 'success') {
           currentUserId = result.userId;
           console.log('User ID:', currentUserId);
 
-          // Fire Segment identify call
           if (window.analytics) {
             analytics.identify(currentUserId, {
               firstName,
