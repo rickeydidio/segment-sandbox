@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Segment Product Catalog</title>
+  <title>Segment Sandbox</title>
   <script src="https://cdn.segment.com/analytics.js/v1/oWGBP8NUUA40JqICPRuVdKM9UehZJO1x/analytics.min.js"></script>
   <style>
     body {
@@ -12,9 +12,8 @@
       padding: 40px;
       color: #333;
     }
-    h1 {
+    h1, h2 {
       text-align: center;
-      margin-bottom: 30px;
     }
     .container {
       max-width: 800px;
@@ -22,14 +21,15 @@
       background: #fff;
       padding: 25px;
       border-radius: 12px;
-      box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+      box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+      margin-bottom: 40px;
     }
     label {
       display: block;
       margin: 12px 0 6px;
       font-weight: 600;
     }
-    select, button {
+    input, select, button {
       width: 100%;
       padding: 10px;
       border-radius: 8px;
@@ -50,8 +50,41 @@
   </style>
 </head>
 <body>
+  <!-- USER REGISTRATION -->
   <div class="container">
-    <h1>Segment Product Catalog</h1>
+    <h1>Segment Sandbox</h1>
+    <h2>User Registration</h2>
+
+    <label for="firstName">First Name</label>
+    <input id="firstName" placeholder="Emma" />
+
+    <label for="lastName">Last Name</label>
+    <input id="lastName" placeholder="Johnson" />
+
+    <label for="email">Email</label>
+    <input id="email" type="email" placeholder="emma@example.com" />
+
+    <label for="state">State</label>
+    <input id="state" placeholder="CA" />
+
+    <label for="emailOptIn">Email Opt-in</label>
+    <select id="emailOptIn">
+      <option value="true">Yes</option>
+      <option value="false">No</option>
+    </select>
+
+    <label for="loyaltyProgram">Loyalty Program</label>
+    <select id="loyaltyProgram">
+      <option value="true">Enrolled</option>
+      <option value="false">Not Enrolled</option>
+    </select>
+
+    <button id="registerBtn">Create / Find User</button>
+  </div>
+
+  <!-- PRODUCT CATALOG -->
+  <div class="container">
+    <h2>Product Catalog</h2>
 
     <label for="category">Category</label>
     <select id="category">
@@ -74,22 +107,22 @@
   <script>
     const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbzc04N9C_lr3N8dQj-m7RX03BiDc6sy87Eovk9Z_x4E5Ob6-JiTP9GK1dzKcw8Wco-K/exec';
     let productData = {};
+    let currentUserId = null;
 
-    // --- Load Product Catalog ---
+    // --- FETCH PRODUCTS ---
     async function fetchProducts() {
       try {
         const response = await fetch(WEB_APP_URL);
-        if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+        if (!response.ok) throw new Error(`HTTP error: ${response.status}`);
         productData = await response.json();
-        console.log('Product catalog loaded successfully.');
         populateCategoryDropdown();
       } catch (err) {
         console.error('Error loading products:', err);
-        alert('Error loading product catalog.');
+        alert('Failed to load product catalog.');
       }
     }
 
-    // --- Populate Category Dropdown ---
+    // --- POPULATE DROPDOWNS ---
     function populateCategoryDropdown() {
       const categorySelect = document.getElementById('category');
       Object.keys(productData).forEach(category => {
@@ -100,13 +133,13 @@
       });
     }
 
-    // --- Populate Subcategories ---
     document.getElementById('category').addEventListener('change', e => {
       const category = e.target.value;
       const subcategorySelect = document.getElementById('subcategory');
       const productSelect = document.getElementById('product');
       subcategorySelect.innerHTML = '<option value="">Select Subcategory</option>';
       productSelect.innerHTML = '<option value="">Select Product</option>';
+      subcategorySelect.disabled = true;
       productSelect.disabled = true;
       document.getElementById('addToCartBtn').disabled = true;
 
@@ -121,80 +154,11 @@
         subcategorySelect.disabled = false;
 
         analytics.track('Category Selected', { category });
-      } else {
-        subcategorySelect.disabled = true;
       }
     });
 
-    // --- Populate Products ---
     document.getElementById('subcategory').addEventListener('change', e => {
       const category = document.getElementById('category').value;
       const subcategory = e.target.value;
       const productSelect = document.getElementById('product');
-      productSelect.innerHTML = '<option value="">Select Product</option>';
-      document.getElementById('addToCartBtn').disabled = true;
-
-      if (subcategory) {
-        const products = productData[category][subcategory];
-        products.forEach(p => {
-          const opt = document.createElement('option');
-          opt.value = p.name;
-          opt.textContent = `${p.name} ($${p.price})`;
-          productSelect.appendChild(opt);
-        });
-        productSelect.disabled = false;
-
-        analytics.track('Subcategory Selected', { category, subcategory });
-      } else {
-        productSelect.disabled = true;
-      }
-    });
-
-    // --- Handle Product Selection ---
-    document.getElementById('product').addEventListener('change', e => {
-      document.getElementById('addToCartBtn').disabled = !e.target.value;
-    });
-
-    // --- Handle Add to Cart ---
-    document.getElementById('addToCartBtn').addEventListener('click', async () => {
-      const category = document.getElementById('category').value;
-      const subcategory = document.getElementById('subcategory').value;
-      const productName = document.getElementById('product').value;
-
-      const product = productData[category][subcategory].find(p => p.name === productName);
-      if (!product) return;
-
-      analytics.track('Product Added to Cart', {
-        category,
-        subcategory,
-        product: product.name,
-        price: product.price
-      });
-
-      try {
-        const response = await fetch(WEB_APP_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'text/plain' },
-          body: JSON.stringify({
-            event: 'Product Added to Cart',
-            category,
-            subcategory,
-            product: product.name,
-            price: product.price
-          })
-        });
-
-        if (!response.ok) throw new Error(`Failed to POST: ${response.status}`);
-        console.log('Event sent successfully to backend');
-        alert(`Added ${product.name} to cart!`);
-      } catch (err) {
-        console.error('Error sending event:', err);
-        alert('Failed to send event.');
-      }
-    });
-
-    // --- Initialize ---
-    fetchProducts();
-  </script>
-</body>
-</html>
+      productSelect.innerHTML = '<option
