@@ -47,6 +47,28 @@
     button:hover {
       background-color: #0056b3;
     }
+    button:disabled {
+      background-color: #ccc;
+      cursor: not-allowed;
+    }
+    .status {
+      padding: 10px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      display: none;
+    }
+    .status.success {
+      background-color: #d4edda;
+      color: #155724;
+      border: 1px solid #c3e6cb;
+      display: block;
+    }
+    .status.error {
+      background-color: #f8d7da;
+      color: #721c24;
+      border: 1px solid #f5c6cb;
+      display: block;
+    }
   </style>
 </head>
 <body>
@@ -54,6 +76,8 @@
   <div class="container">
     <h1>Segment Sandbox</h1>
     <h2>User Registration</h2>
+
+    <div id="userStatus" class="status"></div>
 
     <label for="firstName">First Name</label>
     <input id="firstName" placeholder="Emma" />
@@ -86,19 +110,26 @@
   <div class="container">
     <h2>Product Catalog</h2>
 
+    <div id="productStatus" class="status"></div>
+
     <label for="category">Category</label>
     <select id="category">
       <option value="">Select Category</option>
     </select>
 
-    <label for="subcategory">Subcategory</label>
+    <label for="subcategory">Subcategory (Product Name)</label>
     <select id="subcategory" disabled>
       <option value="">Select Subcategory</option>
     </select>
 
-    <label for="product">Product</label>
-    <select id="product" disabled>
-      <option value="">Select Product</option>
+    <label for="variant">Variant (Color/Wash)</label>
+    <select id="variant" disabled>
+      <option value="">Select Variant</option>
+    </select>
+
+    <label for="size">Size</label>
+    <select id="size" disabled>
+      <option value="">Select Size</option>
     </select>
 
     <button id="addToCartBtn" disabled>Add to Cart</button>
@@ -108,39 +139,77 @@
     const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbzc04N9C_lr3N8dQj-m7RX03BiDc6sy87Eovk9Z_x4E5Ob6-JiTP9GK1dzKcw8Wco-K/exec';
     let productData = {};
     let currentUserId = null;
+    let currentSelection = {
+      category: null,
+      subcategory: null,
+      variant: null,
+      size: null
+    };
+
+    // --- INITIALIZE ---
+    window.addEventListener('DOMContentLoaded', () => {
+      console.log('Page loaded, fetching products...');
+      fetchProducts();
+    });
 
     // --- FETCH PRODUCTS ---
     async function fetchProducts() {
       try {
-        const response = await fetch(WEB_APP_URL);
-        if (!response.ok) throw new Error(`HTTP error: ${response.status}`);
-        productData = await response.json();
+        console.log('Fetching products from:', WEB_APP_URL);
+        const response = await fetch(WEB_APP_URL, {
+          method: 'GET',
+          redirect: 'follow'
+        });
+        console.log('Response status:', response.status);
+        console.log('Response ok:', response.ok);
+        
+        if (!response.ok) {
+          const text = await response.text();
+          console.error('Response text:', text);
+          throw new Error(`HTTP error: ${response.status}`);
+        }
+        
+        const text = await response.text();
+        console.log('Raw response:', text);
+        productData = JSON.parse(text);
+        console.log('Products loaded:', productData);
         populateCategoryDropdown();
       } catch (err) {
         console.error('Error loading products:', err);
-        alert('Failed to load product catalog.');
+        console.error('Error stack:', err.stack);
+        showStatus('productStatus', 'Failed to load product catalog: ' + err.message, 'error');
       }
     }
 
     // --- POPULATE DROPDOWNS ---
     function populateCategoryDropdown() {
       const categorySelect = document.getElementById('category');
+      categorySelect.innerHTML = '<option value="">Select Category</option>';
       Object.keys(productData).forEach(category => {
         const opt = document.createElement('option');
         opt.value = category;
         opt.textContent = category;
         categorySelect.appendChild(opt);
       });
+      console.log('Categories populated');
     }
 
+    // --- CATEGORY CHANGE ---
     document.getElementById('category').addEventListener('change', e => {
       const category = e.target.value;
+      currentSelection.category = category;
+      
       const subcategorySelect = document.getElementById('subcategory');
-      const productSelect = document.getElementById('product');
+      const variantSelect = document.getElementById('variant');
+      const sizeSelect = document.getElementById('size');
+      
       subcategorySelect.innerHTML = '<option value="">Select Subcategory</option>';
-      productSelect.innerHTML = '<option value="">Select Product</option>';
+      variantSelect.innerHTML = '<option value="">Select Variant</option>';
+      sizeSelect.innerHTML = '<option value="">Select Size</option>';
+      
       subcategorySelect.disabled = true;
-      productSelect.disabled = true;
+      variantSelect.disabled = true;
+      sizeSelect.disabled = true;
       document.getElementById('addToCartBtn').disabled = true;
 
       if (category) {
@@ -153,12 +222,185 @@
         });
         subcategorySelect.disabled = false;
 
-        analytics.track('Category Selected', { category });
+        if (window.analytics) {
+          analytics.track('Category Selected', { category });
+          console.log('Tracked: Category Selected -', category);
+        }
       }
     });
 
+    // --- SUBCATEGORY CHANGE ---
     document.getElementById('subcategory').addEventListener('change', e => {
-      const category = document.getElementById('category').value;
+      const category = currentSelection.category;
       const subcategory = e.target.value;
-      const productSelect = document.getElementById('product');
-      productSelect.innerHTML = '<option
+      currentSelection.subcategory = subcategory;
+      
+      const variantSelect = document.getElementById('variant');
+      const sizeSelect = document.getElementById('size');
+      
+      variantSelect.innerHTML = '<option value="">Select Variant</option>';
+      sizeSelect.innerHTML = '<option value="">Select Size</option>';
+      variantSelect.disabled = true;
+      sizeSelect.disabled = true;
+      document.getElementById('addToCartBtn').disabled = true;
+
+      if (subcategory && productData[category][subcategory]) {
+        const productInfo = productData[category][subcategory];
+        
+        // Populate variants (colors or washes)
+        if (productInfo.variants && productInfo.variants.length > 0) {
+          productInfo.variants.forEach(variant => {
+            const opt = document.createElement('option');
+            opt.value = variant;
+            opt.textContent = variant;
+            variantSelect.appendChild(opt);
+          });
+          variantSelect.disabled = false;
+        } else {
+          // No variants, skip to sizes
+          populateSizes(category, subcategory);
+        }
+
+        if (window.analytics) {
+          analytics.track('Product Viewed', {
+            product_name: subcategory,
+            category: category
+          });
+          console.log('Tracked: Product Viewed -', subcategory);
+        }
+      }
+    });
+
+    // --- VARIANT CHANGE ---
+    document.getElementById('variant').addEventListener('change', e => {
+      const variant = e.target.value;
+      currentSelection.variant = variant;
+      
+      if (variant) {
+        populateSizes(currentSelection.category, currentSelection.subcategory);
+      }
+    });
+
+    // --- POPULATE SIZES ---
+    function populateSizes(category, subcategory) {
+      const sizeSelect = document.getElementById('size');
+      sizeSelect.innerHTML = '<option value="">Select Size</option>';
+      
+      const productInfo = productData[category][subcategory];
+      if (productInfo.sizes && productInfo.sizes.length > 0) {
+        productInfo.sizes.forEach(size => {
+          const opt = document.createElement('option');
+          opt.value = size;
+          opt.textContent = size;
+          sizeSelect.appendChild(opt);
+        });
+        sizeSelect.disabled = false;
+      }
+    }
+
+    // --- SIZE CHANGE ---
+    document.getElementById('size').addEventListener('change', e => {
+      const size = e.target.value;
+      currentSelection.size = size;
+      
+      if (size) {
+        document.getElementById('addToCartBtn').disabled = false;
+      }
+    });
+
+    // --- ADD TO CART ---
+    document.getElementById('addToCartBtn').addEventListener('click', () => {
+      const { category, subcategory, variant, size } = currentSelection;
+      const productInfo = productData[category][subcategory];
+      const template = productInfo.template;
+
+      const cartItem = {
+        product_id: template.product_id,
+        name: template.name,
+        category: template.category,
+        price: template.price,
+        variant: variant || 'N/A',
+        size: size,
+        quantity: 1
+      };
+
+      if (window.analytics) {
+        analytics.track('Product Added', cartItem);
+        console.log('Tracked: Product Added -', cartItem);
+        showStatus('productStatus', `Added ${template.name} to cart!`, 'success');
+      }
+    });
+
+    // --- USER REGISTRATION ---
+    document.getElementById('registerBtn').addEventListener('click', async () => {
+      const firstName = document.getElementById('firstName').value.trim();
+      const lastName = document.getElementById('lastName').value.trim();
+      const email = document.getElementById('email').value.trim();
+      const state = document.getElementById('state').value.trim();
+      const emailOptIn = document.getElementById('emailOptIn').value === 'true';
+      const loyaltyProgram = document.getElementById('loyaltyProgram').value === 'true';
+
+      if (!firstName || !lastName || !email) {
+        showStatus('userStatus', 'Please fill in all required fields', 'error');
+        return;
+      }
+
+      try {
+        console.log('Creating/finding user...');
+        const response = await fetch(WEB_APP_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            firstName,
+            lastName,
+            email,
+            state,
+            emailOptIn,
+            loyaltyProgram
+          })
+        });
+
+        if (!response.ok) throw new Error(`HTTP error: ${response.status}`);
+        const result = await response.json();
+        
+        if (result.status === 'success') {
+          currentUserId = result.userId;
+          console.log('User ID:', currentUserId);
+
+          // Fire Segment identify call
+          if (window.analytics) {
+            analytics.identify(currentUserId, {
+              firstName,
+              lastName,
+              email,
+              state,
+              emailOptIn,
+              loyaltyProgram
+            });
+            console.log('Segment identify called with:', currentUserId);
+          }
+
+          showStatus('userStatus', `User ${currentUserId} ready! Segment identify called.`, 'success');
+        } else {
+          throw new Error(result.message || 'Failed to create user');
+        }
+      } catch (err) {
+        console.error('Error creating user:', err);
+        showStatus('userStatus', 'Error: ' + err.message, 'error');
+      }
+    });
+
+    // --- STATUS HELPER ---
+    function showStatus(elementId, message, type) {
+      const statusEl = document.getElementById(elementId);
+      statusEl.textContent = message;
+      statusEl.className = 'status ' + type;
+      setTimeout(() => {
+        statusEl.className = 'status';
+      }, 5000);
+    }
+  </script>
+</body>
+</html>
