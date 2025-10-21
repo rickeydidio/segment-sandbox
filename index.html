@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Segment Sandbox Store</title>
+    <style>
+        :root {
+            --primary-color: #0033a0;
+            --secondary-color: #00a050;
+            --background-color: #f4f7f6;
+            --panel-background: #ffffff;
+            --text-color: #333;
+            --border-color: #e0e0e0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 2rem;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1100px;
+            background: var(--panel-background);
+            border-radius: 12px;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.07);
+            overflow: hidden;
+        }
+
+        .header {
+            background: var(--primary-color);
+            color: white;
+            padding: 1.5rem 2rem;
+            text-align: center;
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 1.75rem;
+        }
+
+        .content {
+            display: grid;
+            grid-template-columns: 1fr 1.5fr;
+            gap: 1px;
+            background-color: var(--border-color);
+        }
+
+        .panel {
+            padding: 2rem;
+            background-color: var(--panel-background);
+        }
+
+        h2 {
+            margin-top: 0;
+            color: var(--primary-color);
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 0.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        input[type="text"],
+        input[type="email"],
+        select {
+            width: 100%;
+            padding: 0.75rem;
+            margin-bottom: 1rem;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            box-sizing: border-box;
+            font-size: 1rem;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(0, 51, 160, 0.1);
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .checkbox-group label {
+            margin-left: 0.5rem;
+            cursor: pointer;
+        }
+
+        button {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 0.8rem 1.25rem;
+            border-radius: 6px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s, transform 0.1s;
+            margin-right: 0.5rem;
+        }
+
+        button:hover {
+            background: #00226c;
+            transform: translateY(-1px);
+        }
+        
+        button:disabled {
+            background-color: #a0a0a0;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        button.event-btn {
+            background: var(--secondary-color);
+        }
+
+        button.event-btn:hover {
+            background: #006e36;
+        }
+        
+        button#reset-btn {
+            background-color: #6c757d;
+        }
+        button#reset-btn:hover {
+            background-color: #5a6268;
+        }
+
+        #log {
+            margin-top: 1.5rem;
+            background: #2d2d2d;
+            color: #9fdf9f;
+            padding: 1rem;
+            border-radius: 6px;
+            font-family: "SF Mono", "Courier New", monospace;
+            font-size: 0.85rem;
+            height: 200px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        #product-selectors {
+            border: 1px solid var(--border-color);
+            padding: 1.5rem;
+            border-radius: 8px;
+        }
+
+        #product-selectors p {
+            margin: 0 0 1rem 0;
+            font-weight: 600;
+        }
+
+        @media (max-width: 800px) {
+            .content {
+                grid-template-columns: 1fr;
+            }
+            body {
+                padding: 1rem;
+            }
+        }
+    </style>
+
+    <!-- 1. ADD SEGMENT'S JAVASCRIPT SNIPPET -->
+    <script>
+      !function(){var analytics=window.analytics=window.analytics||[];if(!analytics.initialize)if(analytics.invoked)window.console&&console.error&&console.error("Segment snippet included twice.");else{analytics.invoked=!0;analytics.methods=["trackSubmit","trackClick","trackLink","trackForm","pageview","identify","reset","group","track","ready","alias","debug","page","once","off","on","addSourceMiddleware","addIntegrationMiddleware","setAnonymousId","addDestinationMiddleware"];analytics.factory=function(e){return function(){var t=Array.prototype.slice.call(arguments);t.unshift(e);analytics.push(t);return analytics}};for(var e=0;e<analytics.methods.length;e++){var key=analytics.methods[e];analytics[key]=analytics.factory(key)}analytics.load=function(key,e){var t=document.createElement("script");t.type="text/javascript";t.async=!0;t.src="https://cdn.segment.com/analytics.js/v1/"+key+"/analytics.min.js";var n=document.getElementsByTagName("script")[0];n.parentNode.insertBefore(t,n);analytics._loadOptions=e};analytics._writeKey="YOUR_SEGMENT_JAVASCRIPT_WRITE_KEY";;analytics.SNIPPET_VERSION="4.15.3";
+      analytics.load("oWGBP8NUUA40JqICPRuVdKM9UehZJO1x");
+      analytics.page("Sandbox Home"); // A more descriptive page name
+      }}();
+    </script>
+</head>
+<body>
+
+    <div class="container">
+        <div class="header">
+            <h1>The Modern Sandbox Store</h1>
+        </div>
+        <div class="content">
+            <div class="panel user-panel">
+                <h2>User Profile</h2>
+                <form id="user-form">
+                    <input type="text" id="firstName" name="firstName" placeholder="First Name" required>
+                    <input type="text" id="lastName" name="lastName" placeholder="Last Name" required>
+                    <input type="email" id="email" name="email" placeholder="Email Address" required>
+                    <input type="text" id="city" name="city" placeholder="City" required>
+                    <input type="text" id="state" name="state" placeholder="State (e.g., CA)" required>
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="emailOptIn" name="emailOptIn">
+                        <label for="emailOptIn">Email Opt-In</label>
+                    </div>
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="loyaltyProgram" name="loyaltyProgram">
+                        <label for="loyaltyProgram">Loyalty Program Member</label>
+                    </div>
+                    <button type="submit" id="submit-btn">Identify User</button>
+                    <button type="button" id="reset-btn">Reset</button>
+                </form>
+            </div>
+            <div class="panel event-panel">
+                <h2>Fire Events</h2>
+                <div id="product-selectors">
+                    <p>Select a Product:</p>
+                    <select id="category" name="category" disabled><option>Loading Categories...</option></select>
+                    <select id="productName" name="productName" disabled><option>Select Category First</option></select>
+                    <select id="variant" name="variant" disabled><option>Select Product First</option></select>
+                    <select id="size" name="size" disabled><option>Select Product First</option></select>
+                </div>
+                <br>
+                <button class="event-btn" id="view-btn">Product Viewed</button>
+                <button class="event-btn" id="add-btn">Product Added</button>
+                
+                <h2>Event Log</h2>
+                <div id="log">Initializing...</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- CONFIG ---
+        const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycby-ZhND6NrU7tfWBnDt9bqqYAcIVz1dzPFddoVZcKZ7RM9mUUvgaPhVJFaPm_dRpO2X/exec';
+        
+        // --- STATE ---
+        let productData = {};
+        let currentUser = { id: null, traits: {} };
+
+        // --- DOM ELEMENTS ---
+        const logEl = document.getElementById('log');
+        const form = document.getElementById('user-form');
+        const submitBtn = document.getElementById('submit-btn');
+        const resetBtn = document.getElementById('reset-btn');
+        const catSelect = document.getElementById('category');
+        const nameSelect = document.getElementById('productName');
+        const varSelect = document.getElementById('variant');
+        const sizeSelect = document.getElementById('size');
+        const viewBtn = document.getElementById('view-btn');
+        const addBtn = document.getElementById('add-btn');
+
+        // --- FUNCTIONS ---
+        
+        function writeToLog(message, type = 'info') {
+            const color = type === 'error' ? '#ffb3b3' : '#9fdf9f';
+            logEl.innerHTML = `<span style="color:${color};">${new Date().toLocaleTimeString()}: ${message}</span><br>` + logEl.innerHTML;
+        }
+
+        // 1. Fetch products from our Apps Script backend on page load
+        async function fetchProducts() {
+            try {
+                const response = await fetch(WEB_APP_URL);
+                if (!response.ok) throw new Error(`Network response was not ok (${response.status})`);
+                productData = await response.json();
+                
+                catSelect.innerHTML = '<option value="">Select Category</option>';
+                Object.keys(productData).forEach(cat => catSelect.add(new Option(cat, cat)));
+                catSelect.disabled = false;
+                writeToLog('Product catalog loaded successfully.');
+            } catch (error) {
+                writeToLog(`Error loading products: ${error.message}`, 'error');
+                catSelect.innerHTML = '<option>Error loading</option>';
+            }
+        }
+        
+        // 2. Handle form submission
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            submitBtn.disabled = true;
+            submitBtn.innerText = 'Identifying...';
+
+            const traits = {
+                firstName: form.firstName.value,
+                lastName: form.lastName.value,
+                email: form.email.value,
+                city: form.city.value,
+                state: form.state.value,
+                emailOptIn: form.emailOptIn.checked,
+                loyaltyProgram: form.loyaltyProgram.checked
+            };
+
+            try {
+                const response = await fetch(WEB_APP_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain' }, // Required for Apps Script simple POST
+                    body: JSON.stringify(traits)
+                });
+                const result = await response.json();
+                
+                if (result.status === 'success' && result.userId) {
+                    currentUser.id = result.userId;
+                    currentUser.traits = traits;
+                    
+                    // The Segment Identify call
+                    analytics.identify(currentUser.id, currentUser.traits);
+                    
+                    writeToLog(`User Identified: ${currentUser.id} (${traits.email})`);
+                } else {
+                    throw new Error(result.message || 'Failed to get user ID from backend');
+                }
+
+            } catch (error) {
+                writeToLog(`Error: ${error.message}`, 'error');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.innerText = 'Identify User';
+            }
+        });
+        
+        // 3. Populate dropdowns based on selections
+        catSelect.addEventListener('change', () => {
+            const selectedCategory = catSelect.value;
+            nameSelect.innerHTML = '<option value="">Select Product</option>';
+            varSelect.innerHTML = '<option>Select Product First</option>';
+            sizeSelect.innerHTML = '<option>Select Product First</option>';
+            varSelect.disabled = true;
+            sizeSelect.disabled = true;
+
+            if (selectedCategory && productData[selectedCategory]) {
+                Object.keys(productData[selectedCategory]).forEach(name => nameSelect.add(new Option(name, name)));
+                nameSelect.disabled = false;
+            } else {
+                nameSelect.disabled = true;
+            }
+        });
+
+        nameSelect.addEventListener('change', () => {
+            const product = productData[catSelect.value]?.[nameSelect.value];
+            if (!product) return;
+            
+            varSelect.innerHTML = '<option value="">Select Variant</option>';
+            (product.variants || []).forEach(v => varSelect.add(new Option(v, v)));
+            
+            sizeSelect.innerHTML = '<option value="">Select Size</option>';
+            (product.sizes || []).forEach(s => sizeSelect.add(new Option(s, s)));
+            
+            varSelect.disabled = !product.variants || product.variants.length === 0;
+            sizeSelect.disabled = false;
+        });
+
+        // 4. Handle event buttons
+        function getSelectedProduct() {
+            if (!catSelect.value || !nameSelect.value) return null;
+            const productInfo = productData[catSelect.value]?.[nameSelect.value];
+            if (!productInfo) return null;
+            
+            const template = productInfo.template;
+            const product = { ...template }; // Start with base properties
+            
+            // Determine if the variant is color or wash based on product name and category
+            if (varSelect.value) {
+                if (template.name === 'Jeans' || template.name === 'Chinos') {
+                     product.wash = varSelect.value;
+                } else {
+                     product.color = varSelect.value;
+                }
+            }
+            if (sizeSelect.value) {
+                product.size = sizeSelect.value;
+            }
+
+            return product;
+        }
+
+        function fireProductEvent(eventName) {
+            const product = getSelectedProduct();
+            if (!product) {
+                alert('Please select a full product first.');
+                return;
+            }
+            analytics.track(eventName, product);
+            writeToLog(`Event: ${eventName} (${product.name})`);
+        }
+
+        viewBtn.addEventListener('click', () => fireProductEvent('Product Viewed'));
+        addBtn.addEventListener('click', () => fireProductEvent('Product Added'));
+        
+        // 5. Handle Reset
+        resetBtn.addEventListener('click', () => {
+            analytics.reset();
+            currentUser.id = null;
+            currentUser.traits = {};
+            form.reset();
+            writeToLog('User reset. New anonymous ID assigned by Segment.');
+        });
+        
+        // --- ON PAGE LOAD ---
+        window.onload = () => {
+            fetchProducts();
+            analytics.ready(() => {
+                const anonId = analytics.user().anonymousId();
+                writeToLog(`Segment ready. Anonymous ID: ${anonId}`);
+            });
+        };
+    </script>
+</body>
+</html>
+
